@@ -5,6 +5,12 @@ module RedmineHtmlToWikiMailHandler
   module HtmlToWikiFormatting
     module Textile
       class Formatter < String
+      
+        ENTITIES = [
+          ["&#8220;", '"'], ["&#8221;", '"'], ["&#8212;", "--"], ["&#8212;", "--"],
+          ["&#8211;","-"], ["&#8230;", "..."], ["&#215;", " x "], ["&#8482;","(TM)"],
+          ["&#174;","(R)"], ["&#169;","(C)"], ["&#8217;", "'"]
+        ]
   
         def initialize(html)
           super(html)
@@ -16,8 +22,10 @@ module RedmineHtmlToWikiMailHandler
         end
     
         def to_wiki(*rules)
+          html = replace_entities(@workingcopy)
+          
           # load html fragment
-          doc = Nokogiri::HTML.fragment(@workingcopy) do |config|
+          doc = Nokogiri::HTML.fragment(html) do |config|
             config.noblanks
           end
           
@@ -117,6 +125,13 @@ module RedmineHtmlToWikiMailHandler
           node_text.concat("---\n")
           node_text
         end
+        
+        def replace_entities(html)
+          ENTITIES.each do |htmlentity, textileentity|
+            html.gsub!(htmlentity, textileentity)
+          end
+          html
+        end
 
         # remove formatting around whitespace
         def remove_formats_from_whitespace(formatted_text)
@@ -183,7 +198,6 @@ module RedmineHtmlToWikiMailHandler
         def process_node(node, state_info, process_text)
           # todo: lists
           # todo: images
-          # todo: entities (&nbsp;)
           # todo: links
           node_text = ''
           if node.element?
