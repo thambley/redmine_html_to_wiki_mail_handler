@@ -126,18 +126,42 @@ module RedmineHtmlToWikiMailHandler
           node_text
         end
 
-        def process_image_node(node, state_info)
-          node_text = '!'
-          node_text << node[:src]
-          if node[:alt]
-            node_text << '(' << node[:alt] << ')'
+        def image_filename(node)
+          image_src = node[:src]
+          image_src.gsub!(/cid:([^@]+)@.+/,'\1')
+          image_src
+        end
+
+        def image_alt(node)
+          alt_text = node[:alt] || node[:title] || ''
+          if alt_text = node[:src]
+            alt_text = ''
           end
-          node_text << '!'
-          node_text
+          alt_text.gsub!(/^(Description: )*/,"")
+          if alt_text.length > 0
+            alt_text = "(#{alt_text})"
+          end
+          alt_text
+        end
+
+        def process_image_node(node, state_info)
+          "!#{image_filename(node)}#{image_alt(node)}!"
         end
 
         def process_link_node(node, state_info)
+          link_text = ''
+          node.children.each {|n| link_text.concat(process_node(n, state_info, true))}
           
+          if m = /^(?<prepend_spaces>[\s\u00A0]+)(?<image_text>[\!][^\!]+[\!])(?<append_spaces>[\s\u00A0]+)$/.match(link_text)
+            link_text = "#{m[:prepend_spaces]}#{m[:image_text]}:#{node[:href]}#{m[:append_spaces]}"
+          else
+            if node[:href] != link_text.strip and node[:href] != "mailto:#{link_text.strip}" # mailto links are automatically created.
+              if node[:href] != "http://#{link_text}" and node[:href] != "http://#{link_text}/"
+                link_text = "\"#{link_text}\":#{node[:href]}"
+              end
+            end
+          end
+          link_text
         end
 
         def process_list_node(node, state_info, list_character)
@@ -273,6 +297,8 @@ module RedmineHtmlToWikiMailHandler
               node_text.concat(process_list_item_node(node, state_info))
             when 'img'
               node_text.concat(process_image_node(node, state_info))
+            when 'a'
+              node_text.concat(process_link_node(node, state_info))
             else
               node.children.each {|n| node_text.concat(process_node(n, state_info, process_text))}
             end
