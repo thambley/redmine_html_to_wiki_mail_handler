@@ -32,7 +32,7 @@ module RedmineHtmlToWikiMailHandler
           # Remove all style content
           doc.xpath('.//style').each{ |n| n.remove }
           
-          wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
+          wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :list_character => '', :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
   
           remove_formats_from_whitespace(wiki_text).gsub(160.chr(Encoding::UTF_8),"&nbsp;")
         end
@@ -125,7 +125,48 @@ module RedmineHtmlToWikiMailHandler
           node_text.concat("---\n")
           node_text
         end
-        
+
+        def process_image_node(node, state_info)
+          node_text = '!'
+          node_text << node[:src]
+          if node[:alt]
+            node_text << '(' << node[:alt] << ')'
+          end
+          node_text << '!'
+          node_text
+        end
+
+        def process_link_node(node, state_info)
+          
+        end
+
+        def process_list_node(node, state_info, list_character)
+          node_text = ''
+          
+          previous_list_character = state_info[:list_character]
+          state_info[:list_character] = list_character
+          state_info[:list_depth] += 1
+          
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          
+          state_info[:list_depth] -= 1
+          state_info[:list_character] = previous_list_character
+          
+          node_text.concat("\n")
+          node_text
+        end
+
+        def process_list_item_node(node, state_info)
+          node_text = ''
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+         
+          if !/^[\n]*([\#\*])\1* /.match(node_text)
+            node_text = "\n\n#{state_info[:list_depth].times.collect {state_info[:list_character]}.join('')} #{node_text}"
+          end
+          
+          node_text
+        end
+
         def replace_entities(html)
           ENTITIES.each do |htmlentity, textileentity|
             html.gsub!(htmlentity, textileentity)
@@ -224,6 +265,14 @@ module RedmineHtmlToWikiMailHandler
               node_text.concat(process_table_row_node(node, state_info))
             when 'td'
               node_text.concat(process_table_data_node(node, state_info))
+            when 'ul'
+              node_text.concat(process_list_node(node, state_info, '*'))
+            when 'ol'
+              node_text.concat(process_list_node(node, state_info, '#'))
+            when 'li'
+              node_text.concat(process_list_item_node(node, state_info))
+            when 'img'
+              node_text.concat(process_image_node(node, state_info))
             else
               node.children.each {|n| node_text.concat(process_node(n, state_info, process_text))}
             end
