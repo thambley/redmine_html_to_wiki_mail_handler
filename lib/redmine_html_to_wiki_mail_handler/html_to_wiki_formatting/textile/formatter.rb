@@ -261,9 +261,6 @@ module RedmineHtmlToWikiMailHandler
         # recurive html node processor
         # returns wiki text
         def process_node(node, state_info, process_text)
-          # todo: lists
-          # todo: images
-          # todo: links
           node_text = ''
           if node.element?
             case node.node_name
