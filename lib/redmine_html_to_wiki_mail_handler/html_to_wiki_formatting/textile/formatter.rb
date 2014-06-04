@@ -24,95 +24,170 @@ module RedmineHtmlToWikiMailHandler
           # Remove all style content
           doc.xpath('.//style').each{ |n| n.remove }
           
-          wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :pre? => false, :bold? => false, :italic? => false, :underline? => false, :strike? => false}, {})
-  
-          wiki_text
+          process_node(doc, {:table? => false, :list_depth => 0, :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
         end
         
         private
         
+        def process_paragraph_node(node, state_info)
+          node_text = ''
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          node_text.gsub!(/([ ]|&nbsp;)+$/,'')
+          node_text.gsub!(/^[ ]+/,'')
+          node_text.concat("\n")
+          node_text.gsub!(/[\n]+$/,"\n")
+          node_text
+        end
+
+        def process_header_node(node, state_info)
+          node_text = ''
+          node_text.concat("#{node.node_name}. ")
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          node_text.concat("\n\n")
+          node_text
+        end
+
+        def process_bold_node(node, state_info)
+          node_text = ''
+          state_info[:bold] = '*'
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          state_info[:bold] = ''
+          
+          node_text.gsub!(/^([\s\u00A0]*)\*([\s\u00A0]*)\*$/,'\1\2')
+          node_text.squeeze!(" ")
+          node_text
+        end
+
+        def process_italic_node(node, state_info)
+          node_text = ''
+          state_info[:italic] = '_'
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          state_info[:italic] = ''
+          node_text
+        end
+
+        def process_underline_node(node, state_info)
+          node_text = ''
+          state_info[:underline] = '+'
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          state_info[:underline] = ''
+          node_text
+        end
+
+        def process_strike_node(node, state_info)
+          node_text = ''
+          state_info[:strike] = '-'
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          state_info[:strike] = ''
+          node_text
+        end
+
+        def process_table_node(node, state_info)
+          node_text = ''
+          state_info[:table?] = true
+          node.children.each {|n| node_text.concat(process_node(n, state_info, false))}
+          state_info[:table?] = false
+          node_text.concat("\n")
+          node_text
+        end
+
+        def process_table_row_node(node, state_info)
+          node_text = ''
+          node.children.each {|n| node_text.concat(process_node(n, state_info, false))}
+          node_text.concat("|\n")
+          node_text
+        end
+
+        def process_table_data_node(node, state_info)
+          node_text = ''
+          node_text.concat("|")
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          node_text.gsub!(/[\s]+$/,'')
+          node_text
+        end
+
+        def process_line_break_node(node, state_info)
+          node_text = ''
+          node_text.concat("\n")
+          node_text
+        end
+
+        def process_hrule_node(node, state_info)
+          node_text = ''
+          node_text.concat("---\n")
+          node_text
+        end
+
+        def process_text_node(node, state_info)
+          node_text = ''
+          node_words = node.to_s.gsub(/[\r\n]/,' ').squeeze(" ")
+            
+          space_matches = /^(?<spaces>[\s\u00A0]+)/.match(node_words)
+          
+          if space_matches.nil?
+            prepend_spaces = ''
+          else
+            prepend_spaces = space_matches[:spaces]
+            node_words.gsub!(/^[\s\u00A0]+/,'')
+          end
+          
+          space_matches = /(?<spaces>[\s\u00A0]+)$/.match(node_words)
+          
+          if space_matches.nil?
+            append_spaces = ''
+          else
+            append_spaces = space_matches[:spaces]
+            node_words.gsub!(/[\s\u00A0]+$/,'')
+          end
+          
+          font_modifiers = "#{state_info[:underline]}#{state_info[:strike]}#{state_info[:bold]}#{state_info[:italic]}"
+          
+          node_text << prepend_spaces << font_modifiers << node_words << font_modifiers.reverse << append_spaces
+          
+          node_text.gsub!(160.chr(Encoding::UTF_8),"&nbsp;")
+          
+          node_text
+        end
+
         # recurive html node processor
         # returns wiki text
-        def process_node(node, state_info, options)
+        def process_node(node, state_info, process_text)
+          # todo: lists
+          # todo: images
+          # todo: entities (&nbsp;)
+          # todo: links
           node_text = ''
           if node.element?
             case node.node_name
             when 'p', 'div'
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              if state_info[:table?]
-                node_text.concat("\n")
-              else
-                node_text.concat("\n\n")
-              end
+              node_text.concat(process_paragraph_node(node, state_info))
             when 'h1','h2','h3','h4','h5','h6','h7','h8','h9'
-              #puts "tag: #{node.node_name}"
-              node_text.concat(node.node_name + '. ')
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              node_text.concat("\n\n")
-              #puts node_text
+              node_text.concat(process_header_node(node, state_info))
             when 'b', 'strong'
-              state_info[:bold?] = true
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              state_info[:bold?] = false
-              
-              node_text.gsub!(/^(\s*)\*(\s*)\*$/,'\1\2')
+              node_text.concat(process_bold_node(node, state_info))
             when 'i', 'em'
-              state_info[:italic?] = true
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              state_info[:italic?] = false
+              node_text.concat(process_italic_node(node, state_info))
             when 'u'
-              state_info[:underline?] = true
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              state_info[:underline?] = false
+              node_text.concat(process_underline_node(node, state_info))
             when 'strike'
-              state_info[:strike?] = true
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              state_info[:strike?] = false
+              node_text.concat(process_strike_node(node, state_info))
             when 'br'
-              node_text.concat("\n")
+              node_text.concat(process_line_break_node(node, state_info))
             when 'hr'
-              node_text.concat("---\n")
+              node_text.concat(process_hrule_node(node, state_info))
             when 'table'
-              state_info[:table?] = true
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              state_info[:table?] = false
-              node_text.concat("\n")
+              node_text.concat(process_table_node(node, state_info))
             when 'tr'
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              node_text.concat("|\n")
+              node_text.concat(process_table_row_node(node, state_info))
             when 'td'
-              node_text.concat("|")
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
-              node_text.gsub!(/(\n*)$/,'')
+              node_text.concat(process_table_data_node(node, state_info))
             else
-              node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
+              node.children.each {|n| node_text.concat(process_node(n, state_info, process_text))}
             end
-          elsif node.text?
-            #puts "text"
-            temp_text = node.to_s.gsub(/[\r\n]/,' ').squeeze(" ")
-            
-            prepend_space = !temp_text.lstrip!.nil?
-            if prepend_space
-              node_text.concat(' ')
-            end
-            prepend_nbsp = !node.to_s.gsub!(/^[\u00A0]/,'').nil?
-            node_text.concat('+') if state_info[:underline?]
-            node_text.concat('-') if state_info[:strike?]
-            node_text.concat('*') if state_info[:bold?]
-            node_text.concat('_') if state_info[:italic?]
-            node_text.concat(node.to_s.gsub(/[\r\n]/,' ').lstrip)
-            append_space = !node_text.rstrip!.nil?
-            node_text.concat('_') if state_info[:italic?]
-            node_text.concat('*') if state_info[:bold?]
-            node_text.concat('-') if state_info[:strike?]
-            node_text.concat('+') if state_info[:underline?]
-            if append_space
-              node_text.concat(' ')
-            end
-            node_text.gsub!(160.chr(Encoding::UTF_8),"&nbsp;")
-            #puts node_text
+          elsif process_text and node.text?
+            node_text.concat(process_text_node(node, state_info))
           else
-            node.children.each {|n| node_text.concat(process_node(n, state_info, options))}
+            node.children.each {|n| node_text.concat(process_node(n, state_info, process_text))}
           end
           node_text
         end
