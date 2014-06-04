@@ -24,7 +24,9 @@ module RedmineHtmlToWikiMailHandler
           # Remove all style content
           doc.xpath('.//style').each{ |n| n.remove }
           
-          process_node(doc, {:table? => false, :list_depth => 0, :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
+          wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
+  
+          remove_formats_from_whitespace(wiki_text).gsub(160.chr(Encoding::UTF_8),"&nbsp;")
         end
         
         private
@@ -32,7 +34,7 @@ module RedmineHtmlToWikiMailHandler
         def process_paragraph_node(node, state_info)
           node_text = ''
           node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
-          node_text.gsub!(/([ ]|&nbsp;)+$/,'')
+          node_text.gsub!(/[ \u00A0]+$/,'')
           node_text.gsub!(/^[ ]+/,'')
           node_text.concat("\n")
           node_text.gsub!(/[\n]+$/,"\n")
@@ -53,8 +55,6 @@ module RedmineHtmlToWikiMailHandler
           node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
           state_info[:bold] = ''
           
-          node_text.gsub!(/^([\s\u00A0]*)\*([\s\u00A0]*)\*$/,'\1\2')
-          node_text.squeeze!(" ")
           node_text
         end
 
@@ -118,10 +118,33 @@ module RedmineHtmlToWikiMailHandler
           node_text
         end
 
-        def process_text_node(node, state_info)
-          node_text = ''
-          node_words = node.to_s.gsub(/[\r\n]/,' ').squeeze(" ")
+        # remove formatting around whitespace
+        def remove_formats_from_whitespace(formatted_text)
+          bullet_pattern = /^(?<bullets>[\*]+ )(?<line_text>.*)/
+          formatted_whitespace_pattern = /([\+]?)([\-]?)([\*]?)([\_]?)([ \u00A0]+)\4\3\2\1/
+          
+          reformatted_text = ''
+
+          formatted_text.each_line do |formatted_line|
+            bullet_matches = bullet_pattern.match(formatted_line)
+            if bullet_matches.nil?
+              bullet_text = ''
+            else
+              bullet_text = bullet_matches[:bullets]
+              formatted_line = bullet_matches[:line_text]
+            end
             
+            reformatted_text << bullet_text << formatted_line.gsub(formatted_whitespace_pattern, '\5')
+          end
+          
+          reformatted_text
+        end
+
+        def font_modifiers(state_info)
+          "#{state_info[:underline]}#{state_info[:strike]}#{state_info[:bold]}#{state_info[:italic]}"
+        end
+
+        def extract_node_words(node_words)
           space_matches = /^(?<spaces>[\s\u00A0]+)/.match(node_words)
           
           if space_matches.nil?
@@ -140,11 +163,17 @@ module RedmineHtmlToWikiMailHandler
             node_words.gsub!(/[\s\u00A0]+$/,'')
           end
           
-          font_modifiers = "#{state_info[:underline]}#{state_info[:strike]}#{state_info[:bold]}#{state_info[:italic]}"
+          [prepend_spaces, node_words, append_spaces]
+        end
+
+        def process_text_node(node, state_info)
+          node_text = ''
+            
+          prepend_spaces, node_words, append_spaces = extract_node_words( node.to_s.gsub(/[\r\n]/,' ').squeeze(" ") )
           
-          node_text << prepend_spaces << font_modifiers << node_words << font_modifiers.reverse << append_spaces
+          start_font_modifier = font_modifiers(state_info)
           
-          node_text.gsub!(160.chr(Encoding::UTF_8),"&nbsp;")
+          node_text << prepend_spaces << start_font_modifier << node_words << start_font_modifier.reverse << append_spaces
           
           node_text
         end
