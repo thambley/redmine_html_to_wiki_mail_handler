@@ -150,7 +150,7 @@ module RedmineHtmlToWikiMailHandler
           link_text = ''
           node.children.each {|n| link_text.concat(process_node(n, state_info, true))}
           
-          if m = /^(?<prepend_spaces>[\s\u00A0]+)(?<image_text>[\!][^\!]+[\!])(?<append_spaces>[\s\u00A0]+)$/.match(link_text)
+          if m = /^(?<prepend_spaces>[\s\u00A0]*)(?<image_text>[\!][^\!]+[\!])(?<append_spaces>[\s\u00A0]*)$/.match(link_text)
             link_text = "#{m[:prepend_spaces]}#{m[:image_text]}:#{node[:href]}#{m[:append_spaces]}"
           else
             if node[:href] != link_text.strip and node[:href] != "mailto:#{link_text.strip}" # mailto links are automatically created.
