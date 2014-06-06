@@ -183,7 +183,7 @@ module RedmineHtmlToWikiMailHandler
           node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
          
           if !/^[\n]*([\#\*])\1* /.match(node_text)
-            node_text = "\n\n#{state_info[:list_depth].times.collect {state_info[:list_character]}.join('')} #{node_text}"
+            node_text = "\n#{state_info[:list_depth].times.collect {state_info[:list_character]}.join('')} #{node_text}"
           end
           
           node_text
@@ -224,7 +224,7 @@ module RedmineHtmlToWikiMailHandler
 
         def process_text_node(node, state_info)
           node_text = ''
-            
+          
           prepend_spaces, node_words, append_spaces = extract_node_words( node.to_s.gsub(/[\r\n]/,' ').squeeze(" ") )
           
           start_font_modifier = font_modifiers(state_info)
