@@ -22,7 +22,7 @@ module RedmineHtmlToWikiMailHandler
           
           wiki_text = process_node(doc, false)
   
-          remove_formats_from_whitespace(wiki_text).gsub(160.chr(Encoding::UTF_8),"&nbsp;")
+          clean_up_nbsp_for_formatting(remove_extra_formatting(wiki_text)).gsub(160.chr(Encoding::UTF_8),"&nbsp;")
         end
         
         private
@@ -82,10 +82,19 @@ module RedmineHtmlToWikiMailHandler
           node.to_s.gsub(/[\r\n]/,' ').squeeze(" ")
         end
         
-        def remove_formats_from_whitespace(html)
+        def remove_extra_formatting(html)
           loop do
             break if html.gsub!(/<\/([biu]|strike)>([\s\u00A0]*)<\1>/,'\2').nil?
           end
+          html
+        end
+        
+        def clean_up_nbsp_for_formatting(html)
+          #try to get real spaces around formatting tags instead of non breaking spaces which cause issues with textile formatting
+          html.gsub!(/<\/([biu]|strike)>([\u00A0]) /,'</\1> \2')
+          html.gsub!(/ ([\u00A0])<([biu]|strike)>/,'\1 <\2>')
+          html.gsub!(/<\/([biu]|strike)>[\u00A0] /,'</\1> ')
+          html.gsub!(/>[\u00A0]</,'> <')
           html
         end
         
