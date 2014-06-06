@@ -83,7 +83,10 @@ module RedmineHtmlToWikiMailHandler
         end
         
         def remove_formats_from_whitespace(html)
-           html.gsub(/<\/(biu|strike)>([\s\u00A0]+)<\1>/,'\2')
+          loop do
+            break if html.gsub!(/<\/([biu]|strike)>([\s\u00A0]*)<\1>/,'\2').nil?
+          end
+          html
         end
         
       end
