@@ -48,7 +48,7 @@ module RedmineHtmlToWikiMailHandler
           @workingcopy = html
         end
 
-        def to_html(*args)
+        def to_wiki(*args)
           @workingcopy = strip_tags(@workingcopy.strip)
           @workingcopy.sub! %r{^<!DOCTYPE .*$}, ''
           @workingcopy

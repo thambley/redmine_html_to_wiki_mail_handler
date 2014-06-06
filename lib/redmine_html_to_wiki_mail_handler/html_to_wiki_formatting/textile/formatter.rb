@@ -16,13 +16,11 @@ module RedmineHtmlToWikiMailHandler
           super(html)
           @workingcopy = html
         end
-        
-        def logger
-          Rails.logger
-        end
     
         def to_wiki(*rules)
           html = replace_entities(@workingcopy)
+          
+          html = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting.formatter_for(:simple_html).new(html).to_wiki
           
           # load html fragment
           doc = Nokogiri::HTML.fragment(html) do |config|
@@ -34,7 +32,7 @@ module RedmineHtmlToWikiMailHandler
           
           wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :list_character => '', :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
   
-          remove_formats_from_whitespace(wiki_text).gsub(160.chr(Encoding::UTF_8),"&nbsp;")
+          wiki_text.gsub(160.chr(Encoding::UTF_8),"&nbsp;")
         end
         
         private
@@ -198,28 +196,6 @@ module RedmineHtmlToWikiMailHandler
           html
         end
 
-        # remove formatting around whitespace
-        def remove_formats_from_whitespace(formatted_text)
-          bullet_pattern = /^(?<bullets>[\*]+ )(?<line_text>.*)/
-          formatted_whitespace_pattern = /([\+]?)([\-]?)([\*]?)([\_]?)([ \u00A0]+)\4\3\2\1/
-          
-          reformatted_text = ''
-
-          formatted_text.each_line do |formatted_line|
-            bullet_matches = bullet_pattern.match(formatted_line)
-            if bullet_matches.nil?
-              bullet_text = ''
-            else
-              bullet_text = bullet_matches[:bullets]
-              formatted_line = bullet_matches[:line_text]
-            end
-            
-            reformatted_text << bullet_text << formatted_line.gsub(formatted_whitespace_pattern, '\5')
-          end
-          
-          reformatted_text
-        end
-
         def font_modifiers(state_info)
           "#{state_info[:underline]}#{state_info[:strike]}#{state_info[:bold]}#{state_info[:italic]}"
         end
@@ -253,7 +229,11 @@ module RedmineHtmlToWikiMailHandler
           
           start_font_modifier = font_modifiers(state_info)
           
-          node_text << prepend_spaces << start_font_modifier << node_words << start_font_modifier.reverse << append_spaces
+          if node_words.length > 0
+            node_text << prepend_spaces << start_font_modifier << node_words << start_font_modifier.reverse << append_spaces
+          else
+            node_text << prepend_spaces
+          end
           
           node_text
         end
