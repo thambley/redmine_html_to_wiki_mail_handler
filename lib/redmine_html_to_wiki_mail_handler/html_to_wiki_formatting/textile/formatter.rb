@@ -120,7 +120,7 @@ module RedmineHtmlToWikiMailHandler
 
         def process_hrule_node(node, state_info)
           node_text = ''
-          node_text.concat("---\n")
+          node_text.concat("\n---\n\n")
           node_text
         end
 
