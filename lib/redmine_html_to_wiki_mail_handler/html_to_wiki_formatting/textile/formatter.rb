@@ -153,8 +153,12 @@ module RedmineHtmlToWikiMailHandler
           if m = /^(?<prepend_spaces>[\s\u00A0]*)(?<image_text>[\!][^\!]+[\!])(?<append_spaces>[\s\u00A0]*)$/.match(link_text)
             link_text = "#{m[:prepend_spaces]}#{m[:image_text]}:#{node[:href]}#{m[:append_spaces]}"
           else
-            if node[:href] != link_text.strip and node[:href] != "mailto:#{link_text.strip}" # mailto links are automatically created.
-              if node[:href] != "http://#{link_text}" and node[:href] != "http://#{link_text}/"
+            test_link_text = link_text.strip
+            while test_link_text.sub!(/^([\*\-\_\+])(.+)\1$/, '\2')
+            end
+            
+            if node[:href] != test_link_text and node[:href] != "mailto:#{test_link_text}" # mailto links are automatically created.
+              if node[:href] != "http://#{test_link_text}" and node[:href] != "http://#{test_link_text}/"
                 link_text = "\"#{link_text}\":#{node[:href]}"
               end
             end
