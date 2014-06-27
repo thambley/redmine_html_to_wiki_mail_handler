@@ -32,10 +32,25 @@ module RedmineHtmlToWikiMailHandler
           
           wiki_text = process_node(doc, {:table? => false, :list_depth => 0, :list_character => '', :pre? => false, :bold => '', :italic => '', :underline => '', :strike => ''}, false).rstrip
   
-          wiki_text.gsub(160.chr(Encoding::UTF_8),"&nbsp;")
+          wiki_text.gsub!(160.chr(Encoding::UTF_8),"&nbsp;")
+          
+          #return 
+          wiki_text.lines.map{|line| update_line(line)}.join
         end
         
         private
+        
+        # perform per line replacement
+        def update_line(line_text)
+          updated_line_text = line_text
+          # replace outlook list format with textile list format:
+          updated_line_text.gsub!(/^[\u00b7]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /,"* ") # middot - middle dot
+          updated_line_text.gsub!(/^[\u2022]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /,"* ") # bull   - bullet
+          updated_line_text.gsub!(/^o&nbsp;&nbsp; /,"** ") # second level bullet
+          updated_line_text.gsub!(/^[0-9]+.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /, "# ")
+          
+          updated_line_text
+        end
         
         def process_paragraph_node(node, state_info)
           node_text = ''
