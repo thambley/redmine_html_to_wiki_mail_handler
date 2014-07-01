@@ -202,7 +202,7 @@ module RedmineHtmlToWikiMailHandler
           node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
          
           if !/^[\n]*([\#\*])\1* /.match(node_text)
-            node_text = "\n#{state_info[:list_depth].times.collect {state_info[:list_character]}.join('')} #{node_text}"
+            node_text = "#{state_info[:list_depth].times.collect {state_info[:list_character]}.join('')} #{node_text}\n"
           end
           
           node_text
