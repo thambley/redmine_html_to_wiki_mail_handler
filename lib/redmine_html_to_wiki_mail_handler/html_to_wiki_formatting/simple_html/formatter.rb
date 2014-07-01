@@ -54,7 +54,7 @@ module RedmineHtmlToWikiMailHandler
 
         def process_content_node(node, process_text)
           simple_html_text = "<#{node.name}>"
-          node.children.each {|n| simple_html_text.concat(process_node(n, true))}
+          node.children.each {|n| simple_html_text.concat(process_node(n, process_text))}
           simple_html_text.concat("</#{node.name}>")
           simple_html_text
         end
