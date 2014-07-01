@@ -18,6 +18,12 @@ class TextileConverterTest < ActiveSupport::TestCase
                  "Expected: h1. Give RedCloth a try!"
   end
   
+  test "bullet list 1" do
+    list_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<ul>\n<li>an item</li>\n	<li>and another</li></ul>").to_wiki
+    assert_equal "* an item\n* and another",
+                 list_text
+  end
+  
   # more complicated conversions:
   
   test "paragraph with some formatting" do
@@ -28,7 +34,7 @@ class TextileConverterTest < ActiveSupport::TestCase
   
   test "lists" do
     list_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<ul>\n<li>an item</li>\n	<li>and another</li>\n</ul>\n<ol>\n	<li>one</li>\n	<li>two</li>\n</ol>").to_wiki
-    assert_equal "* an item\n* and another\n\n\n# one\n# two",
+    assert_equal "* an item\n* and another\n\n# one\n# two",
                  list_text
   end
 end
