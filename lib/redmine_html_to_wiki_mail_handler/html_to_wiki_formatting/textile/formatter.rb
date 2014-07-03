@@ -68,6 +68,8 @@ module RedmineHtmlToWikiMailHandler
           updated_line_text.gsub!(/^[\u00b7]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /,"* ") # middot - middle dot
           updated_line_text.gsub!(/^[\u2022]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /,"* ") # bull   - bullet
           updated_line_text.gsub!(/^o&nbsp;&nbsp; /,"** ") # second level bullet
+          updated_line_text.gsub!(/^[\u00A7]&nbsp; /,"*** ") # 3rd level bullet (section entity)
+          
           updated_line_text.gsub!(/^[0-9]+.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /, "# ")
           
           updated_line_text
