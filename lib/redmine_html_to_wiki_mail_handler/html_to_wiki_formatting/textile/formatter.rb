@@ -6,11 +6,34 @@ module RedmineHtmlToWikiMailHandler
     module Textile
       class Formatter < String
       
-        ENTITIES = [
-          ["&#8220;", '"'], ["&#8221;", '"'], ["&#8212;", "--"], ["&#8212;", "--"],
-          ["&#8211;","-"], ["&#8230;", "..."], ["&#215;", " x "], ["&#8482;","(TM)"],
-          ["&#174;","(R)"], ["&#169;","(C)"], ["&#8217;", "'"]
-        ]
+        ENTITIES = [["&#169;","(C)"],
+                    ["&#174;","(R)"],
+                    ["&#215;", " x "],
+                    ["&#8211;","-"],
+                    ["&#8212;", "--"],
+                    ["&#8213;", "--"],
+                    ["&#8217;", "'"],
+                    ["&#8220;", '"'], 
+                    ["&#8221;", '"'],
+                    ["&#8230;", "..."],
+                    ["&#8482;","(TM)"]]
+        
+        CHARACTERS = [[169.chr(Encoding::UTF_8),  "(C)"],
+                      [174.chr(Encoding::UTF_8),  "(R)"],
+                      [215.chr(Encoding::UTF_8),  " x "],
+                      [8211.chr(Encoding::UTF_8), "-"],
+                      [8212.chr(Encoding::UTF_8), "--"],
+                      [8213.chr(Encoding::UTF_8), "--"],
+                      [8217.chr(Encoding::UTF_8), "'"],
+                      [8220.chr(Encoding::UTF_8), '"'], 
+                      [8221.chr(Encoding::UTF_8), '"'],
+                      [8230.chr(Encoding::UTF_8), "..."],
+                      [8482.chr(Encoding::UTF_8), "(TM)"]]
+                      
+        SPECIAL_CHARACTERS = [["*","&#42;"],
+                              ["+","&#43;"],
+                              ["-","&#45;"],
+                              ["_","&#95;"]]
   
         def initialize(html)
           super(html)
@@ -18,9 +41,7 @@ module RedmineHtmlToWikiMailHandler
         end
     
         def to_wiki(*rules)
-          html = replace_entities(@workingcopy)
-          
-          html = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting.formatter_for(:simple_html).new(html).to_wiki
+          html = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting.formatter_for(:simple_html).new(@workingcopy).to_wiki
           
           # load html fragment
           doc = Nokogiri::HTML.fragment(html) do |config|
@@ -208,11 +229,29 @@ module RedmineHtmlToWikiMailHandler
           node_text
         end
 
-        def replace_entities(html)
+        def replace_entities(node_text)
           ENTITIES.each do |htmlentity, textileentity|
-            html.gsub!(htmlentity, textileentity)
+            node_text.gsub!(htmlentity, textileentity)
           end
-          html
+          node_text
+        end
+        
+        def replace_characters(node_text)
+          CHARACTERS.each do |character, textileentity|
+            node_text.gsub!(character, textileentity)
+          end
+          node_text
+        end
+        
+        def replace_special_characters(node_text)
+          SPECIAL_CHARACTERS.each do |character, textileentity|
+            node_text.gsub!(character, textileentity)
+          end
+          node_text
+        end
+        
+        def clean_up_node_words(node_text)
+          replace_special_characters(replace_characters(replace_entities(node_text)))
         end
 
         def font_modifiers(state_info)
@@ -249,7 +288,7 @@ module RedmineHtmlToWikiMailHandler
           start_font_modifier = font_modifiers(state_info)
           
           if node_words.length > 0
-            node_text << prepend_spaces << start_font_modifier << node_words << start_font_modifier.reverse << append_spaces
+            node_text << prepend_spaces << start_font_modifier << clean_up_node_words(node_words) << start_font_modifier.reverse << append_spaces
           else
             node_text << prepend_spaces
           end

@@ -1,7 +1,27 @@
 require File.expand_path('../../test_helper', __FILE__)
 
-class TextileConverterTest < ActiveSupport::TestCase
+# http://en.wikipedia.org/wiki/Textile_(markup_language)
 
+class TextileConverterTest < ActiveSupport::TestCase
+  # entity conversion tests
+  test "entity conversion" do
+    entity_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<p>&#8221;</p>").to_wiki
+    assert_equal "\"", 
+                 entity_text
+  end
+  # character conversion tests
+  test "character conversion" do
+    character_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<p>" + 8221.chr(Encoding::UTF_8) + "</p>").to_wiki
+    assert_equal "\"", 
+                 character_text
+  end
+  # special character conversion tests
+  test "special character conversion" do
+    character_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<p>---</p><p>+_*</p>").to_wiki
+    assert_equal "&#45;&#45;&#45;\n&#43;&#95;&#42;", 
+                 character_text
+  end
+  
   # simple html to text conversion tests:
   
   test "bold text" do
