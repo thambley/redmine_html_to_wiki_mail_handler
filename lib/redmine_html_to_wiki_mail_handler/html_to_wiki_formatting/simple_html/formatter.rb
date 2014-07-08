@@ -31,7 +31,7 @@ module RedmineHtmlToWikiMailHandler
           node_html = ''
           if node.element?
             case node.node_name
-            when 'p','div','h1','h2','h3','h4','h5','h6','h7','h8','h9','b','strong','i','em','u','strike','td','li'
+            when 'p','div','h1','h2','h3','h4','h5','h6','h7','h8','h9','b','strong','i','em','u','strike','td','li','span'
               node_html.concat(process_content_node(node, true))
             when 'table','tr','ul','ol'
               node_html.concat(process_content_node(node, false))

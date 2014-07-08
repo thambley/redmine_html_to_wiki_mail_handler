@@ -84,6 +84,12 @@ module RedmineHtmlToWikiMailHandler
           node_text.gsub!(/[\n]+$/,"\n")
           node_text
         end
+        
+        def process_span_node(node, state_info)
+          node_text = ''
+          node.children.each {|n| node_text.concat(process_node(n, state_info, true))}
+          node_text
+        end
 
         def process_header_node(node, state_info)
           node_text = ''
@@ -306,6 +312,8 @@ module RedmineHtmlToWikiMailHandler
             case node.node_name
             when 'p', 'div'
               node_text.concat(process_paragraph_node(node, state_info))
+            when 'span'
+              node_text.concat(process_span_node(node, state_info))
             when 'h1','h2','h3','h4','h5','h6','h7','h8','h9'
               node_text.concat(process_header_node(node, state_info))
             when 'b', 'strong'
