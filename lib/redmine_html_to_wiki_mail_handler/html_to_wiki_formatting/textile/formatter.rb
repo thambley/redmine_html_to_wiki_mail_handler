@@ -94,7 +94,11 @@ module RedmineHtmlToWikiMailHandler
           text.each_line do |line|
             prepend_spaces, node_words, append_spaces = extract_node_words( text )
             if node_words.length > 0
-              formatted_text << prepend_spaces << format << text_style << node_words << format << append_spaces
+              if text_style.length > 0 && node_words =~ /^[!*%_+-]/
+                formatted_text << prepend_spaces << format << text_style << '<notextile></notextile>' << node_words << format << append_spaces
+              else
+                formatted_text << prepend_spaces << format << text_style << node_words << format << append_spaces
+              end
             else
               formatted_text << prepend_spaces
             end
