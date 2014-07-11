@@ -33,7 +33,10 @@ module RedmineHtmlToWikiMailHandler
         SPECIAL_CHARACTERS = [["*","&#42;"],
                               ["+","&#43;"],
                               ["-","&#45;"],
-                              ["_","&#95;"]]
+                              ["_","&#95;"],
+                              ["%","&#37;"],
+                              ["!","&#33;"],
+                              ["|","&#124;"]]
   
         def initialize(html)
           super(html)

@@ -33,9 +33,8 @@ class TextileConverterTest < ActiveSupport::TestCase
   
   test "header level 1" do
     header_text = RedmineHtmlToWikiMailHandler::HtmlToWikiFormatting::Textile::Formatter.new("<h1>Give RedCloth a try!</h1>").to_wiki
-    assert_equal "h1. Give RedCloth a try!",
-                 header_text,
-                 "Expected: h1. Give RedCloth a try!"
+    assert_equal "h1. Give RedCloth a try&#33;",
+                 header_text
   end
   
   test "bullet list 1" do
