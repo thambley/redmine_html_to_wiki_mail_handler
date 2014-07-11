@@ -64,6 +64,7 @@ module RedmineHtmlToWikiMailHandler
           wiki_text.gsub!(160.chr(Encoding::UTF_8),"&nbsp;")
           
           wiki_text.gsub!(/([*-+%_])\1/,'\1<notextile></notextile>\1')
+          wiki_text.gsub!(/ &nbsp;([*-+%_])/,'&nbsp; \1')
           
           #return 
           wiki_text.lines.map{|line| update_line(line)}.join
