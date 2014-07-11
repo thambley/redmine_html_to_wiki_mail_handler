@@ -42,6 +42,7 @@ module RedmineHtmlToWikiMailHandler
           @list_depth = 0
           @list_character = ''
           #@in_pre = false
+          @allow_style = true
         end
     
         def to_wiki(*rules)
@@ -84,7 +85,7 @@ module RedmineHtmlToWikiMailHandler
         def apply_formatting(text, format, style)
           formatted_text = ''
           
-          if style && style.length > 0
+          if @allow_style && style && style.length > 0
             text_style = "{#{style}}"
           else
             text_style = ''
@@ -114,7 +115,11 @@ module RedmineHtmlToWikiMailHandler
         def process_span_node(node)
           node_text = ''
           node.children.each {|n| node_text.concat(process_node(n, true))}
-          apply_formatting(node_text, '%', node[:style])
+          if @allow_style
+            apply_formatting(node_text, '%', node[:style])
+          else
+            node_text
+          end
         end
 
         def process_header_node(node)
@@ -210,6 +215,9 @@ module RedmineHtmlToWikiMailHandler
 
         def process_link_node(node)
           link_text = ''
+          
+          was_allow_style = @allow_style
+          @allow_style = false
           node.children.each {|n| link_text.concat(process_node(n, true))}
           
           if m = /^(?<prepend_spaces>[\s\u00A0]*)(?<image_text>[\!][^\!]+[\!])(?<append_spaces>[\s\u00A0]*)$/.match(link_text)
@@ -225,6 +233,9 @@ module RedmineHtmlToWikiMailHandler
               end
             end
           end
+          
+          @allow_style = was_allow_style
+          
           link_text
         end
 
