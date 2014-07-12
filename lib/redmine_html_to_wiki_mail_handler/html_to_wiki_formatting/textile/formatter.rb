@@ -30,7 +30,9 @@ module RedmineHtmlToWikiMailHandler
                       [8230.chr(Encoding::UTF_8), "..."],
                       [8482.chr(Encoding::UTF_8), "(TM)"]]
                       
-        SPECIAL_CHARACTERS = [["*","&#42;"],
+        SPECIAL_CHARACTERS = [["(","&#40;"],
+                              [")","&#41;"],
+                              ["*","&#42;"],
                               ["+","&#43;"],
                               ["-","&#45;"],
                               ["_","&#95;"],
@@ -110,9 +112,21 @@ module RedmineHtmlToWikiMailHandler
           formatted_text
         end
         
-        def process_paragraph_node(node)
+        def get_node_text(node)
           node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
+          node.children.each do |n|
+            child_node_text = process_node(n, true)
+            if node_text.length > 0 && node_text !~ / $/ && child_node_text =~ /^[!*%_+-]/ 
+              node_text.concat("<notextile></notextile>#{child_node_text}")
+            else
+              node_text.concat(child_node_text)
+            end
+          end
+          node_text
+        end
+        
+        def process_paragraph_node(node)
+          node_text = get_node_text(node)
           node_text.gsub!(/[ \u00A0]+$/,'')
           node_text.gsub!(/^[ ]+/,'')
           node_text.concat("\n")
@@ -121,8 +135,7 @@ module RedmineHtmlToWikiMailHandler
         end
         
         def process_span_node(node)
-          node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
+          node_text = get_node_text(node)
           if @allow_style
             apply_formatting(node_text, '%', node[:style])
           else
@@ -131,35 +144,23 @@ module RedmineHtmlToWikiMailHandler
         end
 
         def process_header_node(node)
-          node_text = ''
-          node_text.concat("#{node.node_name}. ")
-          node.children.each {|n| node_text.concat(process_node(n, true))}
-          node_text.concat("\n\n")
-          node_text
+          "#{node.node_name}. #{get_node_text(node)}\n\n"
         end
 
         def process_bold_node(node)
-          node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
-          apply_formatting(node_text, '*', node[:style])
+          apply_formatting(get_node_text(node), '*', node[:style])
         end
 
         def process_italic_node(node)
-          node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
-          apply_formatting(node_text, '_', node[:style])
+          apply_formatting(get_node_text(node), '_', node[:style])
         end
 
         def process_underline_node(node)
-          node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
-          apply_formatting(node_text, '+', node[:style])
+          apply_formatting(get_node_text(node), '+', node[:style])
         end
 
         def process_strike_node(node)
-          node_text = ''
-          node.children.each {|n| node_text.concat(process_node(n, true))}
-          apply_formatting(node_text, '-', node[:style])
+          apply_formatting(get_node_text(node), '-', node[:style])
         end
 
         def process_table_node(node)
@@ -180,23 +181,17 @@ module RedmineHtmlToWikiMailHandler
         end
 
         def process_table_data_node(node)
-          node_text = ''
-          node_text.concat("|")
-          node.children.each {|n| node_text.concat(process_node(n, true))}
+          node_text = "|#{get_node_text(node)}"
           node_text.gsub!(/[\s]+$/,'')
           node_text
         end
 
         def process_line_break_node(node)
-          node_text = ''
-          node_text.concat("\n")
-          node_text
+          "\n"
         end
 
         def process_hrule_node(node)
-          node_text = ''
-          node_text.concat("\n---\n\n")
-          node_text
+          "\n---\n\n"
         end
 
         def image_filename(node)
