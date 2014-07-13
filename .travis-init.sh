@@ -64,7 +64,8 @@ run_tests() {
     TRACE=--trace
   fi
 
-  script -e -c "bundle exec rake redmine:plugins:test NAME="$PLUGIN $VERBOSE
+  # script -e -c "bundle exec rake redmine:plugins:test NAME="$PLUGIN $VERBOSE
+  script -e -c "bundle exec rake redmine:plugins:html_to_wiki_mail_handler:coveralls:test"
 }
 
 uninstall() {
