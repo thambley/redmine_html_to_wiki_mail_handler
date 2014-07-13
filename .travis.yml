@@ -7,6 +7,7 @@ rvm:
 #    - testing
 env:
   - REDMINE_VERSION=2.5.1 VERBOSE=yes
+  - REDMINE_VERSION=2.5.2 VERBOSE=yes
 script:
   - export PLUGIN=redmine_html_to_wiki_mail_handler
   - export WORKSPACE=$(pwd)/workspace
