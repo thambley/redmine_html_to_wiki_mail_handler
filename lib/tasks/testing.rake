@@ -1,7 +1,7 @@
 namespace :redmine do
   namespace :plugins do
     namespace :html_to_wiki_mail_handler do
-      PLUGIN_NAME='redmine_html_to_wiki_mail_handlerc'
+      PLUGIN_NAME='redmine_html_to_wiki_mail_handler'
 
       desc 'Runs the html_to_wiki_mail_handler tests.'
       task :test do
