@@ -44,10 +44,13 @@ namespace :redmine do
 
       namespace :coveralls do
         desc "Push latest coverage results to Coveralls.io"
-        require 'coveralls/rake/task'
+        task :test => 'redmine:plugins:html_to_wiki_mail_handler:test' do
+          require 'simplecov'
+          ::SimpleCov.root Rails.root.join('plugins', "#{PLUGIN_NAME}")
 
-        Coveralls::RakeTask.new
-        task :test => ['redmine:plugins:html_to_wiki_mail_handler:test', 'coveralls:push']
+          require 'coveralls'
+          Coveralls.push!
+        end
       end
     end
   end
