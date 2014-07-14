@@ -2,4 +2,6 @@ source 'https://rubygems.org'
 
 gem 'nokogiri', '>= 1.5.10'
 
-gem 'coveralls', require: false
+group :test do
+	gem 'coveralls', require: false
+end
